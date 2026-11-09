@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<title>Плагин-хаб</title>
+<style>
+:root{--bg:#ffffff;--surface:#f1f2f8;--text:#14151f;--muted:#6b6e85;--line:#e4e5ee;--accent:#4f46e5;--on-accent:#ffffff;--ok:#15803d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101119;--surface:#1b1c29;--text:#f0f1f8;--muted:#9a9db5;--line:#272839;--accent:#8b85ff;--on-accent:#10101a;--ok:#4ade80}}
+:root[data-theme="dark"]{--bg:#101119;--surface:#1b1c29;--text:#f0f1f8;--muted:#9a9db5;--line:#272839;--accent:#8b85ff;--on-accent:#10101a;--ok:#4ade80}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:520px;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+header{padding:12px 16px 8px}
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:14px;padding:0 14px;height:46px}
+.search svg{flex:none;color:var(--muted)}
+.search input{flex:1;border:0;background:none;color:var(--text);font:inherit;outline:none;min-width:0}
+.search input::placeholder{color:var(--muted)}
+.search:focus-within{outline:2px solid var(--accent)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:0;background:var(--surface);color:var(--text);font:inherit;font-size:14px;padding:7px 14px;border-radius:99px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+main{flex:1;overflow-y:auto}
+.row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 16px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.row:hover,.row:focus-visible{background:var(--surface);outline:none}
+.av{flex:none;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:20px}
+.info{flex:1;min-width:0;border-bottom:1px solid var(--line);padding-bottom:10px}
+.row:last-child .info{border:0}
+.top{display:flex;justify-content:space-between;gap:8px}
+.name{font-weight:600}
+.cat{font-size:12px;color:var(--muted)}
+.desc{font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:12px;color:var(--ok);font-weight:600}
+.empty{padding:48px 24px;text-align:center;color:var(--muted)}
+nav{display:flex;border-top:1px solid var(--line);background:var(--bg)}
+nav button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;padding:10px 0 12px;cursor:pointer}
+nav button[aria-selected="true"]{color:var(--accent);font-weight:600}
+.sheet{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:5}
+.sheet.open{display:flex;animation:in .18s ease-out}
+@keyframes in{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet.open{animation:none}}
+.bar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.back{border:0;background:none;color:var(--accent);font:inherit;font-size:28px;line-height:1;cursor:pointer;padding:0 8px}
+.det{flex:1;overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.det .av{width:84px;height:84px;font-size:34px}
+.det h2{font-size:22px}
+.det p{color:var(--muted);max-width:36ch}
+.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.tags span{background:var(--surface);border-radius:99px;font-size:12px;padding:4px 10px;color:var(--muted)}
+.cta{margin-top:12px;border:0;border-radius:14px;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:600;padding:13px 28px;cursor:pointer;min-width:200px}
+.cta.on{background:var(--surface);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <label class="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Поиск плагинов и информации" autocomplete="off" aria-label="Поиск">
+    </label>
+  </header>
+  <div class="chips" id="chips"></div>
+  <main id="list"></main>
+  <nav>
+    <button id="t-all" aria-selected="true">Все плагины</button>
+    <button id="t-my" aria-selected="false">Мои</button>
+  </nav>
+  <section class="sheet" id="sheet" aria-live="polite">
+    <div class="bar"><button class="back" id="back" aria-label="Назад">‹</button><strong id="sh-title"></strong></div>
+    <div class="det" id="det"></div>
+  </section>
+</div>
+<script>
+var P=[
+{n:"Погода",c:"Утилиты",d:"Прогноз на неделю по любому городу",t:["погода","дождь","температура"],k:"#0ea5e9"},
+{n:"Переводчик",c:"Язык",d:"Перевод текста и голоса на 50+ языков",t:["перевод","язык","english"],k:"#8b5cf6"},
+{n:"Калькулятор",c:"Утилиты",d:"Обычный, инженерный и конвертер единиц",t:["числа","математика","конвертер"],k:"#64748b"},
+{n:"Курсы валют",c:"Финансы",d:"Актуальные курсы и конвертация",t:["деньги","доллар","евро","крипта"],k:"#16a34a"},
+{n:"Новости",c:"Информация",d:"Лента из выбранных источников",t:["сми","события","лента"],k:"#dc2626"},
+{n:"Википедия",c:"Информация",d:"Быстрые справки по любой теме",t:["энциклопедия","факты","статьи"],k:"#475569"},
+{n:"Заметки",c:"Продуктивность",d:"Короткие записи и списки дел",t:["todo","список","блокнот"],k:"#f59e0b"},
+{n:"Таймер",c:"Продуктивность",d:"Таймеры, секундомер и помодоро",t:["время","будильник","фокус"],k:"#ea580c"},
+{n:"Карты",c:"Путешествия",d:"Маршруты и места рядом",t:["навигация","дорога","город"],k:"#059669"},
+{n:"Рецепты",c:"Жизнь",d:"Что приготовить из того, что есть дома",t:["еда","кухня","готовка"],k:"#e11d48"},
+{n:"Музыка",c:"Развлечения",d:"Поиск треков и подборки по настроению",t:["песни","плейлист","радио"],k:"#c026d3"},
+{n:"Фильмы",c:"Развлечения",d:"Что посмотреть вечером: рейтинги и описания",t:["кино","сериалы","рейтинг"],k:"#7c3aed"},
+{n:"Здоровье",c:"Жизнь",d:"Шаги, сон, вода и напоминания",t:["спорт","сон","привычки"],k:"#0d9488"},
+{n:"Словарь",c:"Язык",d:"Значения слов, синонимы и примеры",t:["слова","орфография","синонимы"],k:"#2563eb"},
+{n:"Сканер QR",c:"Утилиты",d:"Считывание и создание QR-кодов",t:["код","ссылка","камера"],k:"#334155"},
+{n:"Билеты",c:"Путешествия",d:"Поезда, самолёты и автобусы в одном поиске",t:["поездка","рейс","отпуск"],k:"#0284c7"},
+{n:"Zapret: YouTube и Discord",c:"Сеть",d:"Обход блокировок YouTube и Discord (для Windows)",t:["zapret","запрет","youtube","discord","обход","блокировки","dpi","github"],k:"#1d4ed8",u:"https://github.com/Flowseal/zapret-discord-youtube/releases"}
+];
+var cats=["Все"].concat(P.map(function(p){return p.c}).filter(function(v,i,a){return a.indexOf(v)===i}));
+var inst={},cat="Все",tab="all",cur=null;
+try{inst=JSON.parse(localStorage.getItem("inst")||"{}")}catch(e){inst={}}
+function save(){try{localStorage.setItem("inst",JSON.stringify(inst))}catch(e){}}
+var $=function(i){return document.getElementById(i)};
+function esc(s){return s.replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function chips(){$("chips").innerHTML=cats.map(function(c){return '<button class="chip" aria-pressed="'+(c===cat)+'" data-c="'+esc(c)+'">'+esc(c)+'</button>'}).join("")}
+function render(){
+  var q=$("q").value.trim().toLowerCase();
+  var r=P.map(function(p,i){return{p:p,i:i}}).filter(function(o){
+    var p=o.p;
+    if(tab==="my"&&!inst[o.i])return false;
+    if(cat!=="Все"&&p.c!==cat)return false;
+    return !q||(p.n+" "+p.d+" "+p.c+" "+p.t.join(" ")).toLowerCase().indexOf(q)>-1;
+  });
+  $("list").innerHTML=r.length?r.map(function(o){var p=o.p;
+    return '<button class="row" data-i="'+o.i+'"><span class="av" style="background:'+p.k+'">'+p.n[0]+'</span><span class="info"><span class="top"><span class="name">'+p.n+'</span>'+(inst[o.i]?'<span class="badge">Установлен</span>':'<span class="cat">'+p.c+'</span>')+'</span><span class="desc" style="display:block">'+p.d+'</span></span></button>'}).join("")
+  :'<div class="empty">'+(tab==="my"&&!q?"Здесь появятся установленные плагины. Найдите нужный через поиск и нажмите «Установить».":"Ничего не найдено. Попробуйте другое слово или выберите «Все».")+'</div>';
+}
+function openP(i){cur=i;var p=P[i];
+  $("sh-title").textContent=p.n;
+  $("det").innerHTML='<span class="av" style="background:'+p.k+'">'+p.n[0]+'</span><h2>'+p.n+'</h2><p>'+p.d+'</p><div class="tags">'+p.t.map(function(t){return"<span>"+t+"</span>"}).join("")+'</div>'+(p.u?'<a class="cta" style="text-decoration:none;display:inline-block" href="'+p.u+'" target="_blank" rel="noopener noreferrer">Скачать на GitHub</a>':'')+'<button class="cta'+(inst[i]?" on":"")+'" id="cta">'+(inst[i]?"Удалить":"Установить")+'</button>';
+  $("sheet").classList.add("open");$("cta").focus();
+}
+$("q").addEventListener("input",render);
+$("chips").addEventListener("click",function(e){var b=e.target.closest(".chip");if(!b)return;cat=b.dataset.c;chips();render()});
+$("list").addEventListener("click",function(e){var b=e.target.closest(".row");if(b)openP(+b.dataset.i)});
+$("back").addEventListener("click",function(){$("sheet").classList.remove("open");render()});
+$("det").addEventListener("click",function(e){if(e.target.id!=="cta")return;
+  if(inst[cur])delete inst[cur];else inst[cur]=1;save();openP(cur)});
+function setTab(t){tab=t;$("t-all").setAttribute("aria-selected",t==="all");$("t-my").setAttribute("aria-selected",t==="my");render()}
+$("t-all").onclick=function(){setTab("all")};
+$("t-my").onclick=function(){setTab("my")};
+chips();render();
+</script>
+</body>
+</html>
